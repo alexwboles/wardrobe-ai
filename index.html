@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wardrobe AI — Closet Organizer & Outfit Planner</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">Wardrobe <span class="ai">AI</span></div>
+  <div class="tagline">Your closet, organized. Get dressed in seconds.</div>
+</header>
+
+<div class="countbar" id="countLine"></div>
+
+<nav class="tabs">
+  <button class="tab active" data-tab="closet">Closet</button>
+  <button class="tab" data-tab="outfits">Outfits</button>
+  <button class="tab" data-tab="wear">What to wear</button>
+  <button class="tab" data-tab="piles">Donate &amp; sell</button>
+</nav>
+
+<main>
+  <!-- CLOSET -->
+  <section class="pane active" id="pane-closet">
+    <div class="card form-card">
+      <h2>Add a piece</h2>
+      <div class="form-grid">
+        <label>Piece name
+          <input type="text" id="fName" placeholder="e.g. Navy wool blazer" maxlength="60">
+        </label>
+        <label>Category
+          <select id="fCategory"></select>
+        </label>
+        <label>Color
+          <input type="text" id="fColor" placeholder="e.g. Navy" maxlength="30">
+        </label>
+        <label>Photo <span class="muted">(optional)</span>
+          <input type="file" id="fPhoto" accept="image/*">
+          <span class="muted small" id="photoNote"></span>
+        </label>
+      </div>
+      <div class="checkgroup">
+        <span class="glabel">Seasons</span>
+        <div class="checks" id="fSeasons"></div>
+      </div>
+      <div class="checkgroup">
+        <span class="glabel">Occasions</span>
+        <div class="checks" id="fOccasions"></div>
+      </div>
+      <div class="actions">
+        <button class="primary" id="addItemBtn">Add to closet</button>
+        <span class="muted" id="formNote"></span>
+      </div>
+    </div>
+
+    <div class="listhead">
+      <h2>My closet</h2>
+      <select id="filterCat" aria-label="Filter by category"></select>
+    </div>
+    <div class="grid" id="closetGrid"></div>
+  </section>
+
+  <!-- OUTFITS -->
+  <section class="pane" id="pane-outfits">
+    <h2>Outfit builder</h2>
+    <p class="muted">Tap <strong>+ Outfit</strong> on closet pieces to add them to the draft below, then save the look.</p>
+    <div class="card">
+      <div class="form-row">
+        <input type="text" id="outfitName" placeholder="Outfit name — e.g. Client dinner" maxlength="60">
+        <button class="primary" id="saveOutfitBtn">Save outfit</button>
+        <button class="ghost" id="clearDraftBtn">Clear</button>
+      </div>
+    </div>
+    <h3>Draft</h3>
+    <div class="grid" id="draftGrid"></div>
+    <h3>Closet pieces — tap + Outfit to add</h3>
+    <div class="grid" id="builderGrid"></div>
+    <h3>Saved outfits</h3>
+    <div id="savedOutfits"></div>
+  </section>
+
+  <!-- WHAT TO WEAR -->
+  <section class="pane" id="pane-wear">
+    <h2>What to wear</h2>
+    <div class="card">
+      <div class="form-row">
+        <label>Weather
+          <select id="wWeather">
+            <option value="hot">Hot</option>
+            <option value="warm" selected>Warm</option>
+            <option value="cool">Cool</option>
+            <option value="cold">Cold</option>
+          </select>
+        </label>
+        <label>Occasion
+          <select id="wOccasion">
+            <option value="casual" selected>Casual</option>
+            <option value="work">Work</option>
+            <option value="formal">Formal</option>
+            <option value="sport">Sport</option>
+            <option value="evening">Evening out</option>
+          </select>
+        </label>
+        <button class="primary" id="suggestBtn">Suggest an outfit</button>
+      </div>
+    </div>
+    <div id="suggestion"></div>
+  </section>
+
+  <!-- PILES -->
+  <section class="pane" id="pane-piles">
+    <h2>Donate &amp; sell</h2>
+    <p class="muted">Pieces you've moved out of the closet. They stay here until you re-keep or remove them.</p>
+    <h3>To donate</h3>
+    <div class="grid" id="pile-donate"></div>
+    <h3>To sell</h3>
+    <div class="grid" id="pile-sell"></div>
+  </section>
+</main>
+
+<footer>
+  <p>100% local — your wardrobe never leaves this browser. · Wardrobe AI</p>
+</footer>
+
+<script src="js/logic.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
