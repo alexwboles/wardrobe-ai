@@ -8,13 +8,14 @@
 </head>
 <body>
 <header class="topbar">
-  <div class="brand">Wardrobe <span class="ai">AI</span></div>
-  <div class="tagline">Your closet, organized. Get dressed in seconds.</div>
+  <div class="topbar-inner">
+    <div class="brand">Wardrobe <span class="ai">AI</span></div>
+    <p class="tagline">Your closet, curated. Get dressed in seconds.</p>
+  </div>
+  <div class="countbar" id="countLine"></div>
 </header>
 
-<div class="countbar" id="countLine"></div>
-
-<nav class="tabs">
+<nav class="tabs" aria-label="Sections">
   <button class="tab active" data-tab="closet">Closet</button>
   <button class="tab" data-tab="outfits">Outfits</button>
   <button class="tab" data-tab="wear">What to wear</button>
@@ -25,6 +26,7 @@
   <!-- CLOSET -->
   <section class="pane active" id="pane-closet">
     <div class="card form-card">
+      <p class="kicker">Atelier intake</p>
       <h2>Add a piece</h2>
       <div class="form-grid">
         <label>Piece name
@@ -56,7 +58,10 @@
     </div>
 
     <div class="listhead">
-      <h2>My closet</h2>
+      <div>
+        <p class="kicker">The collection</p>
+        <h2>My closet</h2>
+      </div>
       <select id="filterCat" aria-label="Filter by category"></select>
     </div>
     <div class="grid" id="closetGrid"></div>
@@ -64,8 +69,9 @@
 
   <!-- OUTFITS -->
   <section class="pane" id="pane-outfits">
+    <p class="kicker">Stylist's rail</p>
     <h2>Outfit builder</h2>
-    <p class="muted">Tap <strong>+ Outfit</strong> on closet pieces to add them to the draft below, then save the look.</p>
+    <p class="muted">Tap <strong>+ Outfit</strong> on closet pieces to add them to the rail below, then save the look.</p>
     <div class="card">
       <div class="form-row">
         <input type="text" id="outfitName" placeholder="Outfit name — e.g. Client dinner" maxlength="60">
@@ -73,16 +79,17 @@
         <button class="ghost" id="clearDraftBtn">Clear</button>
       </div>
     </div>
-    <h3>Draft</h3>
-    <div class="grid" id="draftGrid"></div>
+    <h3>Draft rail</h3>
+    <div class="grid rail" id="draftGrid"></div>
     <h3>Closet pieces — tap + Outfit to add</h3>
     <div class="grid" id="builderGrid"></div>
-    <h3>Saved outfits</h3>
+    <h3>Saved looks</h3>
     <div id="savedOutfits"></div>
   </section>
 
   <!-- WHAT TO WEAR -->
   <section class="pane" id="pane-wear">
+    <p class="kicker">Concierge</p>
     <h2>What to wear</h2>
     <div class="card">
       <div class="form-row">
@@ -111,6 +118,7 @@
 
   <!-- PILES -->
   <section class="pane" id="pane-piles">
+    <p class="kicker">Edit</p>
     <h2>Donate &amp; sell</h2>
     <p class="muted">Pieces you've moved out of the closet. They stay here until you re-keep or remove them.</p>
     <h3>To donate</h3>
