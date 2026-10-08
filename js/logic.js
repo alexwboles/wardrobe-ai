@@ -238,6 +238,103 @@ function outfitItems(outfit, items) {
     .filter(Boolean);
 }
 
+// ---- wear log ----
+// wearLog: { itemId: ['YYYY-MM-DD', ...] } — stored separately from items.
+const WEAR_KEY = "wardrobe:v1:wear";
+
+function loadWear() {
+  try {
+    const raw = storage.get(WEAR_KEY);
+    const o = raw ? JSON.parse(raw) : {};
+    return o && typeof o === "object" ? o : {};
+  } catch (e) { return {}; }
+}
+function persistWear(wearLog) { storage.set(WEAR_KEY, JSON.stringify(wearLog || {})); }
+
+function todayISO() {
+  const d = new Date();
+  const p = n => String(n).padStart(2, "0");
+  return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate());
+}
+function daysBetweenISO(a, b) {
+  return Math.round((new Date(b + "T12:00:00") - new Date(a + "T12:00:00")) / 86400000);
+}
+
+/** Record that an item was worn on dateISO. Returns a new wearLog (no mutation). */
+function logWear(wearLog, id, dateISO) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateISO || "")) throw new Error("bad date: " + dateISO);
+  const log = Object.assign({}, wearLog || {});
+  const arr = (log[id] || []).slice();
+  if (arr.indexOf(dateISO) === -1) arr.push(dateISO);
+  arr.sort();
+  log[id] = arr;
+  return log;
+}
+
+function wearCount(wearLog, id) {
+  return ((wearLog || {})[id] || []).length;
+}
+
+function lastWorn(wearLog, id) {
+  const arr = (wearLog || {})[id] || [];
+  return arr.length ? arr[arr.length - 1] : null;
+}
+
+/**
+ * Active items not worn in `days` (or never worn), oldest-last-worn first.
+ * today: ISO date, defaults to real today.
+ */
+function neglectedItems(items, wearLog, days, today) {
+  const now = today || todayISO();
+  const cutoff = Number(days) > 0 ? Number(days) : 30;
+  return activeItems(items)
+    .map(it => ({ item: it, last: lastWorn(wearLog, it.id) }))
+    .filter(x => !x.last || daysBetweenISO(x.last, now) >= cutoff)
+    .sort((a, b) => (a.last || "") < (b.last || "") ? -1 : 1)
+    .map(x => x.item);
+}
+
+// ---- search & sort ----
+function searchItems(items, query) {
+  const q = String(query || "").trim().toLowerCase();
+  if (!q) return items;
+  return items.filter(it =>
+    (it.name + " " + (it.color || "") + " " + (CATEGORY_LABELS[it.category] || ""))
+      .toLowerCase().includes(q));
+}
+
+/** key: 'newest' (default) | 'name' | 'category'. Returns a new array. */
+function sortItems(items, key) {
+  const arr = items.slice();
+  if (key === "name") {
+    arr.sort((a, b) => a.name.toLowerCase() < b.name.toLowerCase() ? -1 : 1);
+  } else if (key === "category") {
+    arr.sort((a, b) => {
+      const ka = CATEGORY_LABELS[a.category] + "|" + a.name.toLowerCase();
+      const kb = CATEGORY_LABELS[b.category] + "|" + b.name.toLowerCase();
+      return ka < kb ? -1 : 1;
+    });
+  } else {
+    arr.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1)); // newest first
+  }
+  return arr;
+}
+
+// ---- CSV export ----
+function itemsToCSV(items, wearLog) {
+  const esc = v => {
+    const s = String(v == null ? "" : v);
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  };
+  const lines = ["name,category,color,seasons,occasions,status,wears,last_worn"];
+  (items || []).forEach(it => lines.push([
+    esc(it.name), esc(it.category), esc(it.color || ""),
+    esc((it.seasons || []).join(";")), esc((it.occasions || []).join(";")),
+    esc(it.status), wearCount(wearLog, it.id), esc(lastWorn(wearLog, it.id) || "")
+  ].join(",")));
+  return lines.join("\n");
+}
+
 const api = {
   CATEGORIES: CATEGORIES, CATEGORY_LABELS: CATEGORY_LABELS,
   SEASONS: SEASONS, OCCASIONS: OCCASIONS, OCCASION_LABELS: OCCASION_LABELS,
@@ -245,11 +342,16 @@ const api = {
   PHOTO_MAX_CHARS: PHOTO_MAX_CHARS,
   loadItems: loadItems, persistItems: persistItems,
   loadOutfits: loadOutfits, persistOutfits: persistOutfits,
+  loadWear: loadWear, persistWear: persistWear,
   addItem: addItem, updateItem: updateItem, removeItem: removeItem,
   setStatus: setStatus, getItem: getItem,
   activeItems: activeItems, pileItems: pileItems,
   suggestOutfit: suggestOutfit,
-  saveOutfit: saveOutfit, deleteOutfit: deleteOutfit, outfitItems: outfitItems
+  saveOutfit: saveOutfit, deleteOutfit: deleteOutfit, outfitItems: outfitItems,
+  searchItems: searchItems, sortItems: sortItems,
+  logWear: logWear, wearCount: wearCount, lastWorn: lastWorn,
+  neglectedItems: neglectedItems, itemsToCSV: itemsToCSV,
+  todayISO: todayISO
 };
 
 if (typeof window !== "undefined") window.Wardrobe = api;

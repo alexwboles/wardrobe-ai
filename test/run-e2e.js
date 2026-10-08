@@ -140,4 +140,81 @@ flow("suggestion input validation", () => {
   if (!threw) throw new Error("bad occasion accepted");
 });
 
-console.log("WARDROBE E2E: " + flows + "/7 flows passed");
+// 8: wear log — log wears, counts, last-worn, dedupe, bad dates rejected
+flow("wear log lifecycle", () => {
+  let items = W.addItem([], mk("tops", "Tee"));
+  const id = items[0].id;
+  let log = {};
+  if (W.wearCount(log, id) !== 0) throw new Error("fresh count should be 0");
+  if (W.lastWorn(log, id) !== null) throw new Error("fresh lastWorn should be null");
+  log = W.logWear(log, id, "2026-09-01");
+  log = W.logWear(log, id, "2026-09-10");
+  log = W.logWear(log, id, "2026-09-01"); // duplicate date ignored
+  if (W.wearCount(log, id) !== 2) throw new Error("count should be 2, got " + W.wearCount(log, id));
+  if (W.lastWorn(log, id) !== "2026-09-10") throw new Error("lastWorn wrong: " + W.lastWorn(log, id));
+  const before = JSON.stringify(log);
+  const log2 = W.logWear({}, "other", "2026-09-05");
+  if (JSON.stringify(log) !== before) throw new Error("logWear mutated the input");
+  if (W.wearCount(log2, "other") !== 1) throw new Error("second log broken");
+  let threw = false;
+  try { W.logWear({}, id, "not-a-date"); } catch (e) { threw = true; }
+  if (!threw) throw new Error("bad date accepted");
+});
+
+// 9: neglected pieces — never-worn and stale items surface, fresh ones don't
+flow("neglected pieces detection", () => {
+  let items = W.addItem([], mk("tops", "Old tee"));
+  const stale = items[0].id;
+  items = W.addItem(items, mk("tops", "New tee"));
+  const fresh = items[1].id;
+  let log = W.logWear({}, stale, "2026-01-01");
+  log = W.logWear(log, fresh, "2026-10-06");
+  const neg = W.neglectedItems(items, log, 30, "2026-10-07");
+  const ids = neg.map(i => i.id);
+  if (ids.indexOf(stale) === -1) throw new Error("stale item not flagged");
+  if (ids.indexOf(fresh) !== -1) throw new Error("fresh item wrongly flagged");
+  // never-worn counts as neglected
+  let items2 = W.addItem([], mk("shoes", "Unworn boots"));
+  const neg2 = W.neglectedItems(items2, {}, 30, "2026-10-07");
+  if (neg2.length !== 1) throw new Error("never-worn item not flagged");
+  // donated items are excluded
+  let items3 = W.setStatus(items, stale, "donate");
+  const neg3 = W.neglectedItems(items3, log, 30, "2026-10-07");
+  if (neg3.some(i => i.id === stale)) throw new Error("donated item flagged");
+});
+
+// 10: search + sort over the closet
+flow("closet search and sort", () => {
+  let items = [];
+  items = W.addItem(items, mk("shoes", "White sneakers", { color: "White" }));
+  items = W.addItem(items, mk("tops", "Navy blazer", { color: "Navy" }));
+  items = W.addItem(items, mk("tops", "Red scarf", { color: "Red" }));
+  const byColor = W.searchItems(items, "navy");
+  if (byColor.length !== 1 || byColor[0].name !== "Navy blazer") throw new Error("color search failed");
+  const byCat = W.searchItems(items, "shoes");
+  if (byCat.length !== 1 || byCat[0].name !== "White sneakers") throw new Error("category search failed");
+  if (W.searchItems(items, "zzz").length !== 0) throw new Error("no-match search failed");
+  if (W.searchItems(items, "").length !== 3) throw new Error("empty search failed");
+  const byName = W.sortItems(items, "name").map(i => i.name);
+  if (byName.join("|") !== "Navy blazer|Red scarf|White sneakers") throw new Error("name sort wrong: " + byName.join("|"));
+  const byCat2 = W.sortItems(items, "category").map(i => i.name);
+  if (byCat2[0] !== "White sneakers") throw new Error("category sort wrong: " + byCat2.join("|"));
+  const newest = W.sortItems(items, "newest");
+  if (newest.length !== 3) throw new Error("newest sort dropped items");
+  if (items[0].name !== "White sneakers") throw new Error("sort mutated the input");
+});
+
+// 11: CSV export covers items with wear stats and escapes commas
+flow("closet CSV export", () => {
+  let items = W.addItem([], mk("tops", 'Shirt, "blue"', { color: "Blue" }));
+  const id = items[0].id;
+  const log = W.logWear({}, id, "2026-10-01");
+  const csv = W.itemsToCSV(items, log);
+  const lines = csv.split("\n");
+  if (lines[0] !== "name,category,color,seasons,occasions,status,wears,last_worn") throw new Error("bad header");
+  if (lines.length !== 2) throw new Error("line count wrong");
+  if (lines[1].indexOf('"Shirt, ""blue"""') !== 0) throw new Error("name not escaped: " + lines[1]);
+  if (lines[1].indexOf(",1,2026-10-01") === -1) throw new Error("wear stats missing: " + lines[1]);
+});
+
+console.log("WARDROBE E2E: " + flows + "/11 flows passed");

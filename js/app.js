@@ -6,6 +6,7 @@ const W = window.Wardrobe;
 
 let items = W.loadItems();
 let outfits = W.loadOutfits();
+let wear = W.loadWear();
 let currentTab = "closet";
 let draftIds = [];
 let pendingPhoto = "";
@@ -20,6 +21,7 @@ function esc(s) {
 function refresh() {
   W.persistItems(items);
   W.persistOutfits(outfits);
+  W.persistWear(wear);
   renderCounts();
   if (currentTab === "closet") renderCloset();
   else if (currentTab === "outfits") renderOutfits();
@@ -51,10 +53,15 @@ function itemCard(it, opts) {
   const photo = it.photo
     ? '<img class="thumb" src="' + it.photo + '" alt="">'
     : '<div class="thumb none">' + esc((W.CATEGORY_LABELS[it.category] || "?")[0]) + "</div>";
+  const wc = W.wearCount(wear, it.id);
+  const wearLine = wc
+    ? '<div class="iwear">Worn ' + wc + '×' + (W.lastWorn(wear, it.id) ? ' · last ' + esc(W.lastWorn(wear, it.id)) : '') + '</div>'
+    : "";
   let actions = "";
   if (opts.inCloset) {
     actions =
       '<button class="mini" data-act="draft" data-id="' + it.id + '">+ Outfit</button>' +
+      '<button class="mini" data-act="wear" data-id="' + it.id + '" title="Log that you wore this today">Wore it</button>' +
       '<button class="mini" data-act="donate" data-id="' + it.id + '">Donate</button>' +
       '<button class="mini" data-act="sell" data-id="' + it.id + '">Sell</button>' +
       '<button class="mini danger" data-act="del" data-id="' + it.id + '">Delete</button>';
@@ -72,6 +79,7 @@ function itemCard(it, opts) {
     '<div class="itags">' + esc(W.CATEGORY_LABELS[it.category]) +
     (it.color ? " · " + esc(it.color) : "") + "</div>" +
     '<div class="itags dim">' + it.seasons.join(", ") + "</div>" +
+    wearLine +
     '<div class="iactions">' + actions + "</div></div>";
 }
 
@@ -82,6 +90,7 @@ function bindCardActions(root) {
       if (act === "del") { if (confirm("Remove this item?")) items = W.removeItem(items, id); }
       else if (act === "draft") { if (draftIds.indexOf(id) === -1) draftIds.push(id); }
       else if (act === "undraft") { draftIds = draftIds.filter(function (x) { return x !== id; }); }
+      else if (act === "wear") { wear = W.logWear(wear, id, W.todayISO()); }
       else items = W.setStatus(items, id, act);
       refresh();
     };
@@ -91,12 +100,37 @@ function bindCardActions(root) {
 // ---------- Closet ----------
 function renderCloset() {
   const cat = el("filterCat").value;
-  const list = W.activeItems(items).filter(function (it) { return !cat || it.category === cat; });
+  const q = el("closetSearch").value;
+  const sort = el("sortBy").value;
+  let list = W.activeItems(items).filter(function (it) { return !cat || it.category === cat; });
+  list = W.sortItems(W.searchItems(list, q), sort);
   const box = el("closetGrid");
   box.innerHTML = list.length
     ? list.map(function (it) { return itemCard(it, { inCloset: true }); }).join("")
-    : '<p class="muted">Your closet is empty. Add your first piece above.</p>';
+    : '<p class="muted">No pieces match. Try clearing the search or filter — or add your first piece above.</p>';
   bindCardActions(box);
+  renderNeglected();
+}
+
+function renderNeglected() {
+  const box = el("neglectBox");
+  const neg = W.neglectedItems(items, wear, 30);
+  if (!neg.length) { box.innerHTML = ""; return; }
+  const show = neg.slice(0, 6);
+  box.innerHTML = '<div class="card neglect"><h3>Gathering dust — not worn in 30+ days (' + neg.length + ')</h3>' +
+    '<p class="muted small">Wear one soon, or move it to Donate &amp; sell. Tap "Wore it" the next time you do.</p>' +
+    '<div class="grid">' + show.map(function (it) { return itemCard(it, { inCloset: true }); }).join("") + "</div>" +
+    (neg.length > 6 ? '<p class="muted small">+' + (neg.length - 6) + " more…</p>" : "") + "</div>";
+  bindCardActions(box);
+}
+
+function exportClosetCSV() {
+  const csv = W.itemsToCSV(items, wear);
+  const blob = new Blob([csv], { type: "text/csv" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "wardrobe-closet.csv";
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
 }
 
 function buildAddForm() {
@@ -250,6 +284,9 @@ function init() {
     return '<option value="' + c + '">' + W.CATEGORY_LABELS[c] + "</option>";
   }).join("");
   f.onchange = renderCloset;
+  el("closetSearch").addEventListener("input", renderCloset);
+  el("sortBy").addEventListener("change", renderCloset);
+  el("exportCloset").addEventListener("click", exportClosetCSV);
 
   el("addItemBtn").onclick = function () {
     const data = {

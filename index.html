@@ -62,8 +62,18 @@
         <p class="kicker">The collection</p>
         <h2>My closet</h2>
       </div>
-      <select id="filterCat" aria-label="Filter by category"></select>
+      <div class="list-tools">
+        <input type="search" id="closetSearch" placeholder="Search name or color…" aria-label="Search closet">
+        <select id="sortBy" aria-label="Sort closet">
+          <option value="newest">Newest first</option>
+          <option value="name">Name A–Z</option>
+          <option value="category">Category</option>
+        </select>
+        <select id="filterCat" aria-label="Filter by category"></select>
+        <button class="ghost" id="exportCloset">Export CSV</button>
+      </div>
     </div>
+    <div id="neglectBox"></div>
     <div class="grid" id="closetGrid"></div>
   </section>
 

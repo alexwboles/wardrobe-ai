@@ -130,6 +130,16 @@ input[type="file"] { padding: 8px 10px; font-size: 13px; }
   margin: 8px 0 18px; flex-wrap: wrap;
 }
 .listhead select { width: auto; min-width: 190px; }
+.list-tools { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.list-tools input[type="search"] {
+  font: inherit; font-size: 14px; padding: 11px 14px; min-width: 200px;
+  border: 1px solid var(--line); border-radius: 0; background: #fff; color: var(--ink);
+}
+.list-tools select { min-width: 0; }
+.list-tools .ghost { padding: 11px 16px; font-size: 13.5px; font-weight: 650; cursor: pointer; }
+.iwear { font-size: 12px; color: var(--ink-soft); margin-top: 4px; }
+.neglect { border-left: 4px solid var(--burgundy); margin-bottom: 18px; }
+.neglect h3 { margin-top: 0; }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 18px; }
 .item {
   background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);

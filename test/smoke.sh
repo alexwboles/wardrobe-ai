@@ -24,13 +24,21 @@ done
 # 4: every DOM id used by app.js exists in index.html
 for id in countLine filterCat fCategory fSeasons fOccasions fName fColor fPhoto photoNote formNote \
           addItemBtn closetGrid outfitName saveOutfitBtn clearDraftBtn draftGrid builderGrid \
-          savedOutfits wWeather wOccasion suggestBtn suggestion pile-donate pile-sell; do
+          savedOutfits wWeather wOccasion suggestBtn suggestion pile-donate pile-sell \
+          closetSearch sortBy exportCloset neglectBox; do
   grep -q "id=\"$id\"" index.html && ok "dom id present: $id" || bad "dom id missing: $id"
 done
 
 # 5: logic module loads and exposes the API
-node -e "const W=require('./js/logic.js'); ['addItem','suggestOutfit','saveOutfit','setStatus'].forEach(k=>{if(typeof W[k]!=='function')throw new Error('missing '+k)});" \
+node -e "const W=require('./js/logic.js'); ['addItem','suggestOutfit','saveOutfit','setStatus','searchItems','sortItems','logWear','wearCount','lastWorn','neglectedItems','itemsToCSV','loadWear','persistWear','todayISO'].forEach(k=>{if(typeof W[k]!=='function')throw new Error('missing '+k)});" \
   && ok "logic API exports present" || bad "logic API incomplete"
+
+# 5b: app.js wires search/sort/export/wear UI
+missing=""
+for n in closetSearch sortBy exportCloset neglectBox searchItems sortItems logWear neglectedItems itemsToCSV exportClosetCSV; do
+  grep -q "$n" js/app.js || grep -q "$n" index.html || missing="$missing $n"
+done
+[ -z "$missing" ] && ok "app wires search/sort/export/wear UI" || bad "missing wiring:$missing"
 
 # 6: premium styling — no gradients anywhere
 ! grep -qi "gradient" css/style.css && ok "no gradients in CSS" || bad "gradient found in CSS"
